@@ -42,6 +42,7 @@
 #define GPIO_PATH          "/sys/class/gpio/"
 #define GPIO_EXPORT_PATH   GPIO_PATH "export"
 #define GPIO_UNEXPORT_PATH GPIO_PATH "unexport"
+#define GPIO_UNDEFINED     -1
 
 /* pin mapping */
 enum {
@@ -49,7 +50,7 @@ enum {
     GPIO_TCK,
     GPIO_TMS,
     GPIO_TDO,
-    GPIO_REQUIRED
+    GPIO_TOTAL
 };
 
 typedef struct {
@@ -151,7 +152,7 @@ gpio_open (urj_cable_t *cable)
     int i, ret;
 
     /* Export all gpios */
-    for (i = 0; i < GPIO_REQUIRED; i++)
+    for (i = 0; i < GPIO_TOTAL; i++)
     {
         unsigned int gpio = p->jtag_gpios[i];
 
@@ -182,7 +183,7 @@ gpio_close (urj_cable_t *cable)
     int i;
     gpio_params_t *p = cable->params;
 
-    for (i = 0; i < GPIO_REQUIRED; i++)
+    for (i = 0; i < GPIO_TOTAL; i++)
     {
         if (p->fd_gpios[i])
             close (p->fd_gpios[i]);
@@ -216,10 +217,10 @@ gpio_connect (urj_cable_t *cable, const urj_param_t *params[])
         return URJ_STATUS_FAIL;
     }
 
-    cable_params->jtag_gpios[GPIO_TDI] = GPIO_REQUIRED;
-    cable_params->jtag_gpios[GPIO_TDO] = GPIO_REQUIRED;
-    cable_params->jtag_gpios[GPIO_TMS] = GPIO_REQUIRED;
-    cable_params->jtag_gpios[GPIO_TCK] = GPIO_REQUIRED;
+    cable_params->jtag_gpios[GPIO_TDI] = GPIO_UNDEFINED;
+    cable_params->jtag_gpios[GPIO_TDO] = GPIO_UNDEFINED;
+    cable_params->jtag_gpios[GPIO_TMS] = GPIO_UNDEFINED;
+    cable_params->jtag_gpios[GPIO_TCK] = GPIO_UNDEFINED;
     if (params != NULL)
         /* parse arguments beyond the cable name */
         for (i = 0; params[i] != NULL; i++)
@@ -252,8 +253,8 @@ gpio_connect (urj_cable_t *cable, const urj_param_t *params[])
      * is not passed
      */
 
-    for (i = GPIO_TDI; i <= GPIO_TDO; i++)
-        if (cable_params->jtag_gpios[i] == GPIO_REQUIRED)
+    for (i = GPIO_TDI; i < GPIO_TOTAL; i++)
+        if (cable_params->jtag_gpios[i] == GPIO_UNDEFINED)
         {
             urj_error_set (URJ_ERROR_SYNTAX, _("missing required gpios\n"));
             gpio_help (URJ_ERROR_SYNTAX, "gpio");
